@@ -42,8 +42,8 @@ export default function ReportesPage() {
 
   if (!data) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#111] border-t-transparent" />
+      <div className="flex h-96 items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#111]" />
       </div>
     );
   }
@@ -75,31 +75,44 @@ export default function ReportesPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-[#111]">Reportes BI</h1>
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-[#111]">Reportes</h1>
+        <p className="text-sm text-[#666]">
+          Métricas de rendimiento, lead time y análisis de correcciones.
+        </p>
+      </div>
 
       {/* Summary Cards */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <p className="text-xs font-medium text-[#666]">Lead Time Promedio</p>
-          <p className="mt-1 text-3xl font-bold text-[#111]">{data.avgLeadTimeHours}h</p>
-          <p className="mt-1 text-xs text-[#999]">Creación → Aprobación</p>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#999]">
+            Lead Time Prom.
+          </p>
+          <p className="text-2xl font-semibold text-[#111]">{data.avgLeadTimeHours}h</p>
+          <p className="mt-0.5 text-xs text-[#666]">Creación → Aprobación</p>
         </div>
         <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <p className="text-xs font-medium text-[#666]">Total Aprobadas</p>
-          <p className="mt-1 text-3xl font-bold text-[#059669]">{data.totalApproved}</p>
-          <p className="mt-1 text-xs text-[#999]">Tareas completadas</p>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#999]">
+            Total Aprobadas
+          </p>
+          <p className="text-2xl font-semibold text-[#059669]">{data.totalApproved}</p>
+          <p className="mt-0.5 text-xs text-[#666]">Tareas completadas</p>
         </div>
         <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <p className="text-xs font-medium text-[#666]">Total Correcciones</p>
-          <p className="mt-1 text-3xl font-bold text-[#DC2626]">{data.totalCorrections}</p>
-          <p className="mt-1 text-xs text-[#999]">Rechazos acumulados</p>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#999]">
+            Total Correcciones
+          </p>
+          <p className="text-2xl font-semibold text-[#DC2626]">{data.totalCorrections}</p>
+          <p className="mt-0.5 text-xs text-[#666]">Rechazos acumulados</p>
         </div>
         <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <p className="text-xs font-medium text-[#666]">Tasa de Retorno</p>
-          <p className={`mt-1 text-3xl font-bold ${data.correctionRate > 30 ? "text-[#DC2626]" : "text-[#059669]"}`}>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#999]">
+            Tasa de Retorno
+          </p>
+          <p className={`text-2xl font-semibold ${data.correctionRate > 30 ? "text-[#DC2626]" : "text-[#059669]"}`}>
             {data.correctionRate}%
           </p>
-          <p className="mt-1 text-xs text-[#999]">
+          <p className="mt-0.5 text-xs text-[#666]">
             {data.correctionRate > 30 ? "Por encima del umbral" : "Dentro del rango"}
           </p>
         </div>

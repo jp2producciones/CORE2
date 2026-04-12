@@ -3,14 +3,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Plus, ExternalLink, Trash2, X } from "lucide-react";
 import {
-  ArrowLeft,
-  Plus,
-  ExternalLink,
-  Trash2,
-  X,
-} from "lucide-react";
-import { STATUS_LABELS, STATUS_COLORS, PROJECT_STATUS_LABELS } from "@/lib/state-machine";
+  STATUS_LABELS,
+  STATUS_COLORS,
+  PROJECT_STATUS_LABELS,
+} from "@/lib/state-machine";
 import { timeAgo } from "@/lib/format";
 import type { TaskStatus } from "@/db/schema";
 
@@ -82,15 +80,21 @@ export default function ProjectDetailPage() {
     await fetch("/api/proyectos", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, estadoGlobal: newStatus, titulo: project?.titulo, cliente: project?.cliente, pmId: project?.pmId }),
+      body: JSON.stringify({
+        id,
+        estadoGlobal: newStatus,
+        titulo: project?.titulo,
+        cliente: project?.cliente,
+        pmId: project?.pmId,
+      }),
     });
     fetchData();
   };
 
   if (!project) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#111] border-t-transparent" />
+      <div className="flex h-96 items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#111]" />
       </div>
     );
   }
@@ -99,38 +103,48 @@ export default function ProjectDetailPage() {
 
   return (
     <div>
+      {/* Back button */}
       <button
         onClick={() => router.back()}
-        className="mb-4 flex items-center gap-1 text-sm text-[#666] hover:text-[#111]"
+        className="mb-6 flex items-center gap-1.5 text-sm text-[#666] hover:text-[#111]"
       >
         <ArrowLeft size={16} />
         Volver
       </button>
 
-      {/* Project Header */}
+      {/* Project header card */}
       <div className="mb-6 rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-[#111]">{project.titulo}</h1>
+            <h1 className="text-xl font-semibold text-[#111]">
+              {project.titulo}
+            </h1>
             <p className="text-sm text-[#666]">{project.cliente}</p>
             {project.pmNombre && (
-              <p className="mt-1 text-xs text-[#999]">PM: {project.pmNombre}</p>
+              <p className="mt-1 text-xs text-[#999]">
+                PM: {project.pmNombre}
+              </p>
             )}
-            <p className="mt-1 text-xs text-[#999]">Creado {timeAgo(project.createdAt)}</p>
+            <p className="mt-1 text-xs text-[#999]">
+              Creado {timeAgo(project.createdAt)}
+            </p>
           </div>
+
           <div className="flex items-center gap-2">
             <select
               value={project.estadoGlobal}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="rounded-lg border border-[#E5E7EB] px-3 py-1.5 text-sm outline-none"
+              className="rounded-lg border border-[#E5E7EB] px-3 py-1.5 text-sm text-[#111] outline-none focus:border-[#111] focus:ring-1 focus:ring-[#111]"
             >
-              <option value="ACTIVO">Activo</option>
-              <option value="PAUSADO">Pausado</option>
-              <option value="FINALIZADO">Finalizado</option>
+              {Object.entries(PROJECT_STATUS_LABELS).map(([val, label]) => (
+                <option key={val} value={val}>
+                  {label}
+                </option>
+              ))}
             </select>
             <button
               onClick={handleDeleteProject}
-              className="rounded-lg border border-[#FEE2E2] p-2 text-[#DC2626] hover:bg-[#FEE2E2]"
+              className="rounded-lg p-2 text-[#999] hover:bg-[#FEE2E2] hover:text-[#EF4444]"
             >
               <Trash2 size={16} />
             </button>
@@ -138,14 +152,14 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* Tasks */}
+      {/* Tasks section */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[#111]">
           Tareas ({project.tareas.length})
         </h2>
         <button
           onClick={() => setShowTaskModal(true)}
-          className="flex items-center gap-2 rounded-lg bg-[#111] px-4 py-2 text-sm font-medium text-white hover:bg-[#333]"
+          className="flex items-center gap-2 rounded-lg bg-[#111] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#333]"
         >
           <Plus size={16} />
           Nueva Tarea
@@ -153,94 +167,193 @@ export default function ProjectDetailPage() {
       </div>
 
       {project.tareas.length === 0 ? (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white py-12 text-center">
+        <div className="rounded-xl border border-dashed border-[#E5E7EB] bg-[#F9FAFB] py-16 text-center">
           <p className="text-sm text-[#666]">No hay tareas en este proyecto</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {project.tareas.map((task) => {
-            const colors = STATUS_COLORS[task.estado as TaskStatus];
-            return (
-              <Link
-                key={task.id}
-                href={`/tareas/${task.id}`}
-                className="block rounded-xl border border-[#E5E7EB] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-shadow hover:shadow-md"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
+        <>
+          {/* Desktop table */}
+          <div className="hidden lg:block">
+            <div className="overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+              <table className="w-full">
+                <thead className="bg-[#F9FAFB]">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#999]">
+                      Estado
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#999]">
+                      Descripcion
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#999]">
+                      Editor
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#999]">
+                      Correcciones
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#999]">
+                      Actualizado
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#999]">
+                      Video
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {project.tareas.map((task) => {
+                    const colors = STATUS_COLORS[task.estado as TaskStatus];
+                    return (
+                      <Link
+                        key={task.id}
+                        href={`/tareas/${task.id}`}
+                        className="table-row border-t border-[#F3F4F6] transition-colors hover:bg-[#F9FAFB] cursor-pointer"
+                      >
+                        <td className="px-4 py-3 text-sm">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${colors.bg} ${colors.text}`}
+                          >
+                            {STATUS_LABELS[task.estado as TaskStatus]}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#111]">
+                          {task.descripcion || "Sin descripcion"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#666]">
+                          {task.editorNombre || "Sin asignar"}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {task.correcciones > 0 ? (
+                            <span className="rounded-full bg-[#FEE2E2] text-[#EF4444] px-2 py-0.5 text-xs">
+                              {task.correcciones}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-[#999]">0</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#999]">
+                          {timeAgo(task.updatedAt)}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {task.videoUrl && (
+                            <ExternalLink size={14} className="text-[#999]" />
+                          )}
+                        </td>
+                      </Link>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="space-y-3 lg:hidden">
+            {project.tareas.map((task) => {
+              const colors = STATUS_COLORS[task.estado as TaskStatus];
+              return (
+                <Link
+                  key={task.id}
+                  href={`/tareas/${task.id}`}
+                  className="block rounded-xl border border-[#E5E7EB] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${colors.bg} ${colors.text}`}>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${colors.bg} ${colors.text}`}
+                      >
                         {STATUS_LABELS[task.estado as TaskStatus]}
                       </span>
                       {task.correcciones > 0 && (
-                        <span className="rounded-full bg-[#FEE2E2] px-2 py-0.5 text-xs text-[#DC2626]">
-                          {task.correcciones} corrección{task.correcciones > 1 ? "es" : ""}
+                        <span className="rounded-full bg-[#FEE2E2] text-[#EF4444] px-2 py-0.5 text-xs">
+                          {task.correcciones} correccion
+                          {task.correcciones > 1 ? "es" : ""}
                         </span>
                       )}
                     </div>
-                    <p className="mt-2 text-sm text-[#111]">
-                      {task.descripcion || "Sin descripción"}
-                    </p>
-                    <div className="mt-2 flex items-center gap-3 text-xs text-[#999]">
-                      {task.editorNombre && <span>Editor: {task.editorNombre}</span>}
-                      <span>{timeAgo(task.updatedAt)}</span>
-                    </div>
+                    {task.videoUrl && (
+                      <ExternalLink size={14} className="text-[#999]" />
+                    )}
                   </div>
-                  {task.videoUrl && (
-                    <ExternalLink size={16} className="ml-3 text-[#999]" />
-                  )}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+
+                  <p className="mt-2 text-sm text-[#111]">
+                    {task.descripcion || "Sin descripcion"}
+                  </p>
+
+                  <div className="mt-2 flex items-center gap-3 text-xs text-[#999]">
+                    {task.editorNombre && (
+                      <span>Editor: {task.editorNombre}</span>
+                    )}
+                    <span>{timeAgo(task.updatedAt)}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* Create Task Modal */}
       {showTaskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[#111]">Nueva Tarea</h2>
-              <button onClick={() => setShowTaskModal(false)} className="text-[#999] hover:text-[#111]">
+              <h2 className="text-lg font-semibold text-[#111]">
+                Nueva Tarea
+              </h2>
+              <button
+                onClick={() => setShowTaskModal(false)}
+                className="text-[#999] hover:text-[#111]"
+              >
                 <X size={20} />
               </button>
             </div>
+
             <form onSubmit={handleCreateTask} className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#111]">Descripción</label>
+                <label className="mb-1.5 block text-sm font-medium text-[#111]">
+                  Descripcion
+                </label>
                 <textarea
                   value={taskForm.descripcion}
-                  onChange={(e) => setTaskForm({ ...taskForm, descripcion: e.target.value })}
+                  onChange={(e) =>
+                    setTaskForm({ ...taskForm, descripcion: e.target.value })
+                  }
                   rows={3}
-                  className="w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm outline-none focus:border-[#111]"
-                  placeholder="Descripción de la tarea"
+                  className="w-full rounded-lg border border-[#E5E7EB] px-3 py-2.5 text-sm text-[#111] outline-none focus:border-[#111] focus:ring-1 focus:ring-[#111]"
+                  placeholder="Descripcion de la tarea"
                 />
               </div>
+
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#111]">Editor</label>
+                <label className="mb-1.5 block text-sm font-medium text-[#111]">
+                  Editor
+                </label>
                 <select
                   value={taskForm.editorId}
-                  onChange={(e) => setTaskForm({ ...taskForm, editorId: e.target.value })}
-                  className="w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm outline-none focus:border-[#111]"
+                  onChange={(e) =>
+                    setTaskForm({ ...taskForm, editorId: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-[#E5E7EB] px-3 py-2.5 text-sm text-[#111] outline-none focus:border-[#111] focus:ring-1 focus:ring-[#111]"
                 >
                   <option value="">Sin asignar</option>
                   {editors.map((u) => (
-                    <option key={u.id} value={u.id}>{u.nombre}</option>
+                    <option key={u.id} value={u.id}>
+                      {u.nombre}
+                    </option>
                   ))}
                 </select>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowTaskModal(false)}
-                  className="flex-1 rounded-lg border border-[#E5E7EB] px-4 py-2 text-sm font-medium text-[#666] hover:bg-[#F9FAFB]"
+                  className="flex-1 rounded-lg border border-[#E5E7EB] px-4 py-2.5 text-sm font-medium text-[#666] hover:bg-[#F9FAFB]"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-lg bg-[#111] px-4 py-2 text-sm font-medium text-white hover:bg-[#333]"
+                  className="flex-1 rounded-lg bg-[#111] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#333]"
                 >
                   Crear
                 </button>

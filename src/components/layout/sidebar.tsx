@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -26,94 +26,99 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  // Close drawer on route change
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
   };
 
-  const navContent = (
-    <div className="flex h-full flex-col">
-      {/* Logo */}
-      <div className="flex h-16 items-center px-6">
-        <span className="text-xl font-bold text-white">CORE</span>
-        <span className="ml-1 text-xl font-light text-[#999]">2</span>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {NAV_ITEMS.map((item) => {
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-white/10 text-white"
-                  : "text-[#999] hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <item.icon size={20} />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Logout */}
-      <div className="mt-auto border-t border-white/10 p-3">
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#999] transition-colors hover:bg-white/5 hover:text-white"
-        >
-          <LogOut size={20} />
-          Salir
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <>
-      {/* Mobile header */}
-      <div className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between bg-[#1A1A1A] px-4 lg:hidden">
-        <div className="flex items-center">
-          <span className="text-lg font-bold text-white">CORE</span>
-          <span className="ml-1 text-lg font-light text-[#999]">2</span>
-        </div>
+      {/* ── Mobile top bar ─────────────────────────────── */}
+      <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-[#2A2A2A] bg-[#1A1A1A] px-4 lg:hidden">
+        <Link href="/" className="flex items-center gap-1.5">
+          <span className="text-lg font-bold tracking-tight text-white">CORE</span>
+          <span className="text-lg font-light text-[#666]">2</span>
+        </Link>
         <button
           onClick={() => setOpen(!open)}
-          className="rounded-lg p-2 text-white hover:bg-white/10"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-[#999] transition-colors hover:bg-white/10 hover:text-white"
+          aria-label="Menu"
         >
-          {open ? <X size={24} /> : <Menu size={24} />}
+          {open ? <X size={20} /> : <Menu size={20} />}
         </button>
-      </div>
+      </header>
 
-      {/* Mobile drawer overlay */}
+      {/* ── Mobile overlay ─────────────────────────────── */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={() => setOpen(false)}
         />
       )}
 
-      {/* Mobile drawer */}
-      <div
-        className={`fixed left-0 top-14 z-50 h-[calc(100vh-3.5rem)] w-64 bg-[#1A1A1A] transition-transform duration-300 lg:hidden ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
+      {/* ── Sidebar (shared mobile drawer + desktop fixed) */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#1A1A1A]
+          transition-transform duration-300 ease-in-out
+          lg:translate-x-0
+          ${open ? "translate-x-0" : "-translate-x-full"}
+        `}
       >
-        {navContent}
-      </div>
+        {/* Logo */}
+        <div className="flex h-16 shrink-0 items-center gap-1.5 border-b border-[#2A2A2A] px-6">
+          <span className="text-lg font-bold tracking-tight text-white">CORE</span>
+          <span className="text-lg font-light text-[#666]">2</span>
+        </div>
 
-      {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex h-full flex-col bg-[#1A1A1A]">{navContent}</div>
-      </div>
+        {/* Navigation */}
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
+          {NAV_ITEMS.map((item) => {
+            const isActive =
+              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+                  isActive
+                    ? "bg-white/10 text-white"
+                    : "text-[#888] hover:bg-white/[0.06] hover:text-white"
+                }`}
+              >
+                <item.icon size={18} strokeWidth={1.75} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Logout */}
+        <div className="shrink-0 border-t border-[#2A2A2A] p-3">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-[#888] transition-colors hover:bg-white/[0.06] hover:text-white"
+          >
+            <LogOut size={18} strokeWidth={1.75} />
+            Salir
+          </button>
+        </div>
+      </aside>
     </>
   );
 }
