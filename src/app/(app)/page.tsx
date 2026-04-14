@@ -1,348 +1,154 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-} from "recharts";
-import { Activity, CheckCircle2, Clock, RotateCcw } from "lucide-react";
-import { STATUS_LABELS, STATUS_COLORS } from "@/lib/state-machine";
+import Link from "next/link";
+import { Calendar, Plus, FolderOpen } from "lucide-react";
+import { timeAgo } from "@/lib/format";
+import { PROJECT_STATUS_LABELS, TIPO_PROYECTO_LABELS } from "@/lib/state-machine";
 
-type DashboardData = {
-  statusCounts: Record<string, number>;
-  projectCounts: Record<string, number>;
-  totalCorrections: number;
-  totalApproved: number;
-  correctionRate: number;
-  avgLeadTimeHours: number;
-  editorLoad: {
-    editorId: string;
-    editorNombre: string;
-    estado: string;
-    count: number;
-  }[];
-  recentActivity: { fecha: string; count: number }[];
+type Proyecto = {
+  id: string;
+  titulo: string;
+  cliente: string;
+  estadoGlobal: string;
+  tipoProyecto: string | null;
+  fechaGrabacion: string | null;
+  createdAt: string;
+  pmNombre: string | null;
+  totalEntregables: number;
+  entregablesAprobados: number;
 };
 
-const PIE_COLORS = ["#111", "#3B82F6", "#059669", "#D97706", "#7C3AED"];
+function StatusBadge({ estado }: { estado: string }) {
+  const label = PROJECT_STATUS_LABELS[estado] ?? estado;
+  const colorMap: Record<string, string> = {
+    ACTIVO: "bg-green-100 text-green-700",
+    PAUSADO: "bg-yellow-100 text-yellow-700",
+    FINALIZADO: "bg-red-100 text-red-700",
+  };
+  const colors = colorMap[estado] ?? "bg-gray-100 text-gray-600";
 
-export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colors}`}>
+      {label}
+    </span>
+  );
+}
+
+export default function FeedPage() {
+  const [proyectos, setProyectos] = useState<Proyecto[] | null>(null);
 
   useEffect(() => {
-    fetch("/api/dashboard")
+    fetch("/api/proyectos")
       .then((r) => r.json())
-      .then(setData);
+      .then(setProyectos);
   }, []);
 
-  if (!data) {
+  // Loading state
+  if (proyectos === null) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#111]" />
+      <div className="mx-auto max-w-md px-4 pt-12">
+        <div className="flex items-center justify-center py-32">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-black" />
+        </div>
       </div>
     );
   }
 
-  const totalTasks = Object.values(data.statusCounts).reduce(
-    (a, b) => a + b,
-    0,
-  );
-  const totalProjects = Object.values(data.projectCounts).reduce(
-    (a, b) => a + b,
-    0,
-  );
-
-  /* ---------- chart data ---------- */
-
-  const statusPieData = Object.entries(data.statusCounts).map(
-    ([estado, count]) => ({
-      name:
-        STATUS_LABELS[estado as keyof typeof STATUS_LABELS] || estado,
-      value: count,
-    }),
-  );
-
-  const projectBarData = Object.entries(data.projectCounts).map(
-    ([status, count]) => ({
-      name: status,
-      count,
-    }),
-  );
-
-  /* ---------- heatmap ---------- */
-
-  const editors = [
-    ...new Set(data.editorLoad.map((e) => e.editorNombre)),
-  ].filter(Boolean);
-  const states = [
-    "PENDING_BACKUP",
-    "IN_EDITING",
-    "REVIEW_DIANE",
-    "CORRECTION_24H",
-    "APPROVED",
-  ] as const;
-
-  function heatClass(val: number): string {
-    if (val === 0) return "bg-[#F9FAFB]";
-    if (val <= 2) return "bg-[#ECFDF5] text-[#059669]";
-    if (val <= 5) return "bg-[#FEF3C7] text-[#D97706]";
-    return "bg-[#FEE2E2] text-[#EF4444] font-semibold";
-  }
-
   return (
-    <div>
+    <div className="mx-auto max-w-md px-4 pb-32 pt-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111]">Dashboard</h1>
-        <p className="text-sm text-[#666]">
-          Resumen general de proyectos, tareas y rendimiento del equipo.
-        </p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">CORE 2</h1>
+        <p className="text-sm text-gray-500">Produccion</p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {/* Total Projects */}
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#999]">
-            Proyectos
-          </p>
-          <p className="text-2xl font-semibold text-[#111]">
-            {totalProjects}
-          </p>
-          <p className="mt-0.5 text-xs text-[#666]">
-            {Object.keys(data.projectCounts).length} estados
-          </p>
+      {/* Cards */}
+      {proyectos.length === 0 ? (
+        /* Empty state */
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 p-8 text-center">
+          <FolderOpen className="mb-3 h-10 w-10 text-gray-400" />
+          <p className="text-sm font-medium text-gray-500">No hay proyectos</p>
         </div>
+      ) : (
+        <div className="space-y-3">
+          {proyectos.map((p) => {
+            const progress =
+              p.totalEntregables > 0
+                ? (p.entregablesAprobados / p.totalEntregables) * 100
+                : 0;
 
-        {/* Total Tasks */}
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#999]">
-            Tareas
-          </p>
-          <p className="text-2xl font-semibold text-[#111]">{totalTasks}</p>
-          <p className="mt-0.5 text-xs text-[#666]">
-            {data.totalApproved} aprobadas
-          </p>
-        </div>
+            return (
+              <Link
+                key={p.id}
+                href={`/proyectos/${p.id}`}
+                className="block rounded-2xl bg-white p-4 shadow-sm active:scale-[0.98] transition-transform"
+              >
+                {/* Top row: client + type badge */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-gray-900">
+                    {p.cliente}
+                  </span>
+                  {p.tipoProyecto && (
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                      {TIPO_PROYECTO_LABELS[p.tipoProyecto] ?? p.tipoProyecto}
+                    </span>
+                  )}
+                </div>
 
-        {/* Avg Lead Time */}
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#999]">
-            Lead Time Prom.
-          </p>
-          <p className="text-2xl font-semibold text-[#111]">
-            {data.avgLeadTimeHours}h
-          </p>
-          <p className="mt-0.5 text-xs text-[#666]">horas promedio</p>
-        </div>
+                {/* Title */}
+                <p className="mt-1 text-base font-medium text-gray-900">
+                  {p.titulo}
+                </p>
 
-        {/* Correction Rate */}
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-[#999]">
-            Tasa Correcciones
-          </p>
-          <p className="text-2xl font-semibold text-[#111]">
-            {data.correctionRate}%
-          </p>
-          <p className="mt-0.5 text-xs text-[#666]">
-            {data.totalCorrections} correcciones
-          </p>
-        </div>
-      </div>
+                {/* Date + status row */}
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>
+                      {p.fechaGrabacion
+                        ? new Date(p.fechaGrabacion).toLocaleDateString("es-CL", {
+                            day: "2-digit",
+                            month: "short",
+                          })
+                        : "Sin fecha"}
+                    </span>
+                  </div>
+                  <StatusBadge estado={p.estadoGlobal} />
+                </div>
 
-      {/* Charts */}
-      <div className="mb-8 grid gap-6 lg:grid-cols-2">
-        {/* Task Distribution Pie */}
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <h2 className="mb-4 text-sm font-semibold text-[#111]">
-            Distribucion por Estado
-          </h2>
-          {statusPieData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={statusPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={105}
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`}
-                >
-                  {statusPieData.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={PIE_COLORS[i % PIE_COLORS.length]}
+                {/* Progress */}
+                <div className="mt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                      {p.entregablesAprobados}/{p.totalEntregables} entregables
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className="h-full rounded-full bg-black transition-all"
+                      style={{ width: `${progress}%` }}
                     />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-[280px] items-center justify-center text-sm text-[#999]">
-              Sin datos disponibles
-            </div>
-          )}
-        </div>
+                  </div>
+                </div>
 
-        {/* Recent Activity Line */}
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <h2 className="mb-4 text-sm font-semibold text-[#111]">
-            Actividad Reciente (30 dias)
-          </h2>
-          {data.recentActivity.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={data.recentActivity}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis
-                  dataKey="fecha"
-                  tick={{ fontSize: 11, fill: "#666" }}
-                  tickFormatter={(v: string) =>
-                    new Date(v).toLocaleDateString("es-CL", {
-                      day: "2-digit",
-                      month: "short",
-                    })
-                  }
-                />
-                <YAxis tick={{ fontSize: 11, fill: "#666" }} />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-[280px] items-center justify-center text-sm text-[#999]">
-              Sin datos disponibles
-            </div>
-          )}
-        </div>
-
-        {/* Project Status Bar */}
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <h2 className="mb-4 text-sm font-semibold text-[#111]">
-            Proyectos por Estado
-          </h2>
-          {projectBarData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={projectBarData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: "#666" }}
-                />
-                <YAxis tick={{ fontSize: 11, fill: "#666" }} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#111" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-[280px] items-center justify-center text-sm text-[#999]">
-              Sin datos disponibles
-            </div>
-          )}
-        </div>
-
-        {/* Corrections vs Approved Bar */}
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <h2 className="mb-4 text-sm font-semibold text-[#111]">
-            Correcciones vs Aprobadas
-          </h2>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart
-              data={[
-                { name: "Aprobadas", value: data.totalApproved },
-                { name: "Correcciones", value: data.totalCorrections },
-              ]}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 11, fill: "#666" }}
-              />
-              <YAxis tick={{ fontSize: 11, fill: "#666" }} />
-              <Tooltip />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                <Cell fill="#059669" />
-                <Cell fill="#EF4444" />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Heatmap Table */}
-      {editors.length > 0 && (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-          <div className="p-6 pb-0">
-            <h2 className="text-sm font-semibold text-[#111]">
-              Mapa de Carga por Editor
-            </h2>
-          </div>
-          <div className="overflow-x-auto p-6 pt-4">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[#F9FAFB]">
-                  <th className="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider text-[#999]">
-                    Editor
-                  </th>
-                  {states.map((s) => (
-                    <th
-                      key={s}
-                      className="py-3 px-4 text-center text-xs font-medium uppercase tracking-wider text-[#999]"
-                    >
-                      {STATUS_LABELS[s]}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {editors.map((editor) => (
-                  <tr
-                    key={editor}
-                    className="border-t border-[#E5E7EB]"
-                  >
-                    <td className="py-3 px-4 font-medium text-[#111]">
-                      {editor}
-                    </td>
-                    {states.map((estado) => {
-                      const entry = data.editorLoad.find(
-                        (e) =>
-                          e.editorNombre === editor &&
-                          e.estado === estado,
-                      );
-                      const val = entry?.count || 0;
-                      return (
-                        <td
-                          key={estado}
-                          className={`py-3 px-4 text-center ${heatClass(val)}`}
-                        >
-                          {val}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                {/* Timestamp */}
+                <p className="mt-2 text-xs text-gray-400">
+                  {timeAgo(p.createdAt)}
+                </p>
+              </Link>
+            );
+          })}
         </div>
       )}
+
+      {/* FAB */}
+      <button
+        type="button"
+        className="fixed bottom-20 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-black shadow-lg active:scale-95 transition-transform"
+      >
+        <Plus className="h-6 w-6 text-white" />
+      </button>
     </div>
   );
 }

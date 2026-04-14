@@ -1,12 +1,10 @@
-import Sidebar from "@/components/layout/sidebar";
+import BottomNav from "@/components/layout/bottom-nav";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white">
-      <Sidebar />
-      <main className="min-h-screen px-4 pb-8 pt-[4.5rem] lg:ml-64 lg:px-8 lg:pt-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
-      </main>
+    <div className="mx-auto min-h-screen max-w-md bg-gray-50 pb-20">
+      <main className="px-4 pt-6">{children}</main>
+      <BottomNav />
     </div>
   );
 }

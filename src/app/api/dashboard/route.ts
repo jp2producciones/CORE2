@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { tasks, corrections, projects, users } from "@/db/schema";
+import { entregables, corrections, projects, users, respaldos } from "@/db/schema";
 import { isAuthenticated } from "@/lib/auth";
 import { eq, sql, count } from "drizzle-orm";
 
@@ -9,16 +9,16 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  // Task counts by status
+  // Entregable counts by status
   const statusCounts = await db
     .select({
-      estado: tasks.estado,
+      estado: entregables.estado,
       count: count(),
     })
-    .from(tasks)
-    .groupBy(tasks.estado);
+    .from(entregables)
+    .groupBy(entregables.estado);
 
-  // Total projects
+  // Total projects by status
   const projectCounts = await db
     .select({
       estadoGlobal: projects.estadoGlobal,
@@ -31,39 +31,48 @@ export async function GET() {
   const totalCorrections = await db.select({ count: count() }).from(corrections);
   const totalApproved = await db
     .select({ count: count() })
-    .from(tasks)
-    .where(eq(tasks.estado, "APPROVED"));
+    .from(entregables)
+    .where(eq(entregables.estado, "APROBADO"));
 
   // Average lead time (creation to approval) in hours
   const leadTime = await db.all(sql`
     SELECT AVG(
       (julianday(updated_at) - julianday(created_at)) * 24
     ) as avg_hours
-    FROM tasks
-    WHERE estado = 'APPROVED'
+    FROM entregables
+    WHERE estado = 'APROBADO'
   `);
 
-  // Tasks per editor (bottleneck heatmap data)
+  // Entregables per editor (bottleneck heatmap data)
   const editorLoad = await db
     .select({
-      editorId: tasks.editorId,
+      editorId: entregables.editorId,
       editorNombre: users.nombre,
-      estado: tasks.estado,
+      estado: entregables.estado,
       count: count(),
     })
-    .from(tasks)
-    .leftJoin(users, eq(tasks.editorId, users.id))
-    .where(sql`${tasks.editorId} IS NOT NULL`)
-    .groupBy(tasks.editorId, users.nombre, tasks.estado);
+    .from(entregables)
+    .leftJoin(users, eq(entregables.editorId, users.id))
+    .where(sql`${entregables.editorId} IS NOT NULL`)
+    .groupBy(entregables.editorId, users.nombre, entregables.estado);
 
-  // Recent activity (last 30 days task counts by date)
+  // Recent activity (last 30 days entregable counts by date)
   const recentActivity = await db.all(sql`
     SELECT date(created_at) as fecha, COUNT(*) as count
-    FROM tasks
+    FROM entregables
     WHERE created_at >= datetime('now', '-30 days')
     GROUP BY date(created_at)
     ORDER BY fecha
   `);
+
+  // Respaldo stats
+  const respaldoStats = await db
+    .select({
+      estado: respaldos.estado,
+      count: count(),
+    })
+    .from(respaldos)
+    .groupBy(respaldos.estado);
 
   const correctionRate =
     totalApproved[0].count > 0
@@ -79,5 +88,6 @@ export async function GET() {
     avgLeadTimeHours: Math.round(((leadTime[0] as { avg_hours: number })?.avg_hours || 0) * 10) / 10,
     editorLoad,
     recentActivity,
+    respaldoStats: Object.fromEntries(respaldoStats.map((r) => [r.estado, r.count])),
   });
 }

@@ -51,3 +51,32 @@ export function addBusinessHours(startDate: Date, hours: number): Date {
 
   return result;
 }
+
+export function addBusinessDays(startDate: Date, days: number): Date {
+  const result = new Date(startDate);
+  let remaining = days;
+
+  while (remaining > 0) {
+    result.setDate(result.getDate() + 1);
+    const day = result.getDay();
+    if (day !== 0 && day !== 6) {
+      remaining--;
+    }
+  }
+
+  return result;
+}
+
+export function hoursRemaining(deadline: string): number {
+  const now = new Date();
+  const end = new Date(deadline);
+  const diffMs = end.getTime() - now.getTime();
+  return Math.max(0, Math.round(diffMs / 3600000));
+}
+
+export function daysRemaining(deadline: string): number {
+  const now = new Date();
+  const end = new Date(deadline);
+  const diffMs = end.getTime() - now.getTime();
+  return Math.max(0, Math.round(diffMs / 86400000));
+}

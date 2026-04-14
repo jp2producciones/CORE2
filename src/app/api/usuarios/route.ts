@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     email: body.email,
     nombre: body.nombre,
     rol: body.rol,
+    cargo: body.cargo || null,
   }).returning();
   return NextResponse.json(result[0], { status: 201 });
 }
@@ -31,7 +32,7 @@ export async function PUT(request: NextRequest) {
   }
   const body = await request.json();
   const result = await db.update(users)
-    .set({ email: body.email, nombre: body.nombre, rol: body.rol })
+    .set({ email: body.email, nombre: body.nombre, rol: body.rol, cargo: body.cargo })
     .where(eq(users.id, body.id))
     .returning();
   return NextResponse.json(result[0]);
